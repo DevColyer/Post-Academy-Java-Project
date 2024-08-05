@@ -1,4 +1,4 @@
-package com.kataroyale.midgard;
+package com.sparta.midgard;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

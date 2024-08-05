@@ -1,4 +1,4 @@
-package com.kataroyale.midgard;
+package com.sparta.midgard;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
