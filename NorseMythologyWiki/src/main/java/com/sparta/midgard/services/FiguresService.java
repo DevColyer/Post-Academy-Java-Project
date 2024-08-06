@@ -10,6 +10,7 @@ import com.sparta.midgard.repositories.StoryRepository;
 import com.sparta.midgard.utils.StaticUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,13 +29,13 @@ public class FiguresService {
         this.storyRepository = storyRepository;
     }
 
-    public boolean createFigure(Figure figure) throws Exception {
+    public Optional<Figure> createFigure(Figure figure) {
 
         if (figureRepository.existsById(figure.getId())) {
-            return false;
+            throw new ResourceAlreadyExistsException("Figure already exists.");
         }
         figureRepository.save(figure);
-        return true;
+        return figureRepository.findById(figure.getId());
     }
 
     public List<Figure> getFigures() {
@@ -63,7 +64,7 @@ public class FiguresService {
                 : Stream.empty();
     }
 
-    public boolean updateFigure(int id, String name, String imageLink) {
+    public Optional<Figure> updateFigure(int id, String name, String imageLink) {
         Optional<Figure> figureOptional = figureRepository.findById(id);
         if (figureOptional.isPresent()) {
             Figure figure = figureOptional.get();
@@ -73,18 +74,18 @@ public class FiguresService {
             if (imageLink != null && !imageLink.isEmpty()) {
                 figure.setImageLink(imageLink);
             }
-            figureRepository.save(figure);
-            return true;
+
+            return Optional.of(figureRepository.save(figure));
         }
         throw new ResourceNotFoundException("Figure: " + id + " not found.");
     }
 
-    public boolean deleteFigure(int id) {
+    public Optional<Figure> deleteFigure(int id) {
         Optional<Figure> figureOptional = figureRepository.findById(id);
         if (figureOptional.isPresent()) {
             Figure figure = figureOptional.get();
             figureRepository.delete(figure);
-            return true;
+            return Optional.empty();
         }
         throw new ResourceNotFoundException("Figure: " + id + " not found.");
     }
