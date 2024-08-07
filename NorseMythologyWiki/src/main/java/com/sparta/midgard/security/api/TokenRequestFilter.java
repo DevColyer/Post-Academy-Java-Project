@@ -1,7 +1,6 @@
 package com.sparta.midgard.security.api;
 
-
-import com.sparta.midgard.services.SecurityService;
+import com.sparta.midgard.services.security.SecurityService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -26,12 +25,12 @@ public class TokenRequestFilter extends OncePerRequestFilter {
     @Value("${jwt.cookie.name}")
     private String cookieName;
 
-    private final SecurityService userDetailsService;
+    private final SecurityService securityService;
     private final JwtManager jwtManager;
 
     @Autowired
-    public TokenRequestFilter(SecurityService userDetailsService, SecretKey key) {
-        this.userDetailsService = userDetailsService;
+    public TokenRequestFilter(SecurityService securityService, SecretKey key) {
+        this.securityService = securityService;
         this.jwtManager = JwtManager.getInstance(key);
     }
 
@@ -40,42 +39,50 @@ public class TokenRequestFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith("/authenticate")) {
+        if (!requestURI.startsWith("/api")) {
             chain.doFilter(request, response);
             return;
         }
 
-        String username = null;
-        String jwt = null;
+        String jwt = extractJwtFromCookies(request.getCookies());
 
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (cookie.getName().equals(cookieName)) {
-                    jwt = cookie.getValue();
-                    username = jwtManager.extractUser(jwt);
-                    break;
+        if (jwt != null) {
+            String username = jwtManager.extractUser(jwt);
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                try {
+                    UserDetails userDetails = securityService.loadUserByUsername(username);
+
+                    if (jwtManager.validateToken(jwt, userDetails)) {
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    } else {
+                        logger.warn("Invalid JWT token for user: " + username);
+                    }
+                } catch (UsernameNotFoundException e) {
+                    logger.warn("Username not found for user: " + username);
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Username not found");
+                    return;
+                } catch (Exception e) {
+                    logger.error("Error processing JWT token", e);
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                    return;
                 }
             }
-        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-
-                if (jwt != null && jwtManager.validateToken(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } catch (UsernameNotFoundException e) {
-                logger.warn("Username not found for user: {}");
-                logger.warn(e.getMessage());
-
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
-            }
-
         }
 
         chain.doFilter(request, response);
+    }
+
+    private String extractJwtFromCookies(Cookie[] cookies) {
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(cookieName)) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

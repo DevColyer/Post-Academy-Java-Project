@@ -1,4 +1,4 @@
-package com.sparta.midgard.services;
+package com.sparta.midgard.services.security;
 
 import com.sparta.midgard.models.User;
 import com.sparta.midgard.repositories.UserRepository;
