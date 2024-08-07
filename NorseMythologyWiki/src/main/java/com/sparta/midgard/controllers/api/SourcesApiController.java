@@ -1,8 +1,8 @@
 package com.sparta.midgard.controllers.api;
 
-import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.models.StorySource;
 import com.sparta.midgard.services.SourcesService;
+import com.sparta.midgard.utils.StaticUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +26,9 @@ public class SourcesApiController {
 
     @PostMapping("/create")
     public ResponseEntity<StorySource> createSource(@RequestBody StorySource source) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        boolean roleAdmin = StaticUtils.isRoleAdmin();
 
-        if (userDetails.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+        if (roleAdmin) {
             Optional<StorySource> result = sourcesService.createStorySource(source);
 
             return result
@@ -56,10 +55,9 @@ public class SourcesApiController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<StorySource> updateSource(@PathVariable int id, @RequestBody StorySource source) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        boolean roleAdmin = StaticUtils.isRoleAdmin();
 
-        if (userDetails.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+        if (roleAdmin) {
             Optional<StorySource> updateSource = sourcesService.updateStorySource(id, source.getName(), source.getDiscoveryLocation(), source.getDiscoveryDate());
             return updateSource
                     .map(ResponseEntity::ok)
@@ -72,10 +70,9 @@ public class SourcesApiController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<StorySource> deleteFigure(@PathVariable final int id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        boolean roleAdmin = StaticUtils.isRoleAdmin();
 
-        if (userDetails.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))) {
+        if (roleAdmin) {
             Optional<StorySource> source = sourcesService.deleteStorySourceById(id);
             if (source.isEmpty()) {
                 return ResponseEntity.noContent().build();

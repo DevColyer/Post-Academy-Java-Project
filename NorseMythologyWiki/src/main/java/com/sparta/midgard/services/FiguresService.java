@@ -1,5 +1,6 @@
 package com.sparta.midgard.services;
 
+import com.sparta.midgard.exceptions.ResourceAlreadyExistsException;
 import com.sparta.midgard.exceptions.ResourceNotFoundException;
 import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.models.FiguresStory;
@@ -10,7 +11,6 @@ import com.sparta.midgard.repositories.StoryRepository;
 import com.sparta.midgard.utils.StaticUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,14 +54,14 @@ public class FiguresService {
     }
 
     public Stream<Figure> getFiguresByStory(String storyName) {
-        Optional<Story> searchStory = storyRepository.findByName(storyName);
+        String regex = StaticUtils.getPartialMatcherRegex(storyName);
 
-        return searchStory.isPresent() ?
-                figuresStoryRepository.findBy()
-                        .filter(figureStory ->
-                                figureStory.getStory().equals(searchStory.get()))
-                        .map(FiguresStory::getFigure)
-                : Stream.empty();
+        return storyRepository.findBy()
+                .filter(story -> story.getName().matches(regex))
+                .flatMap(matchedStory ->
+                        figuresStoryRepository.findBy()
+                                .filter(figureStory -> figureStory.getStory().equals(matchedStory))
+                                .map(FiguresStory::getFigure));
     }
 
     public Optional<Figure> updateFigure(int id, String name, String imageLink) {

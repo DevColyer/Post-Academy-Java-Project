@@ -31,12 +31,12 @@ public class StoriesService {
         this.storySourceRepository = storySourceRepository;
     }
 
-    public boolean createStory(Story story) {
+    public Optional<Story> createStory(Story story) {
         if (storyRepository.existsById(story.getId())) {
-            return false;
+            return Optional.empty();
         }
-        storyRepository.save(story);
-        return true;
+
+        return Optional.of(storyRepository.save(story));
     }
 
     public List<Story> getStories() {
@@ -54,18 +54,18 @@ public class StoriesService {
                 .filter(story -> story.getName().matches(regex));
     }
 
-    public Stream<Story> getStoriesByFigure(String figureName) {
-        Optional<Figure> searchFigure = figureRepository.findByName(figureName);
+    public Stream<Story> searchStoriesByFigure(String figureName) {
+        String regex = StaticUtils.getPartialMatcherRegex(figureName);
 
-        return searchFigure.isPresent() ?
-                figuresStoryRepository.findBy()
-                        .filter(figureStory ->
-                                figureStory.getFigure().equals(searchFigure.get()))
-                        .map(FiguresStory::getStory)
-                : Stream.empty();
-    }
+        return figureRepository.findBy()
+                .filter(figure -> figure.getName().matches(regex))
+                .flatMap(matchedFigure ->
+                        figuresStoryRepository.findBy()
+                                .filter(figureStory -> figureStory.getFigure().equals(matchedFigure))
+                                .map(FiguresStory::getStory));
+        }
 
-    public boolean updateStory(int id, String name, int sourceId){
+    public Optional<Story> updateStory(int id, String name, int sourceId){
         Optional<Story> storyOptional = storyRepository.findById(id);
         if (storyOptional.isPresent()) {
             Story figure = storyOptional.get();
@@ -75,16 +75,16 @@ public class StoriesService {
             if (storySourceRepository.existsById(sourceId)) {
                 figure.setSource(storySourceRepository.findById(sourceId).get());
             }
-            storyRepository.save(figure);
-            return true;
+
+            return Optional.of(storyRepository.save(figure));
         }
         throw new ResourceNotFoundException("Story: " + id + " not found.");
     }
 
-    public boolean deleteStory(int id) {
+    public Optional<Story> deleteStory(int id) {
         if (storyRepository.existsById(id)) {
             storyRepository.deleteById(id);
-            return true;
+            return Optional.empty();
         }
         throw new ResourceNotFoundException("Story: " + id + " not found.");
     }

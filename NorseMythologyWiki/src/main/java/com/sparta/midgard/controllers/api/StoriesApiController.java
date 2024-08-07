@@ -1,8 +1,9 @@
 package com.sparta.midgard.controllers.api;
 
-import com.sparta.midgard.dtos.FigureDTO;
+import com.sparta.midgard.dtos.StoryDTO;
 import com.sparta.midgard.models.Figure;
-import com.sparta.midgard.services.FiguresService;
+import com.sparta.midgard.models.Story;
+import com.sparta.midgard.services.StoriesService;
 import com.sparta.midgard.utils.StaticUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,67 +18,66 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/figures")
-public class FiguresApiController {
-    private final FiguresService figuresService;
+@RequestMapping("/stories")
+public class StoriesApiController {
+    private final StoriesService storiesService;
 
     @Autowired
-    public FiguresApiController(final FiguresService figuresService) {
-        this.figuresService = figuresService;
+    public StoriesApiController(StoriesService storiesService) {
+        this.storiesService = storiesService;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Figure> createFigure(@RequestBody final Figure figure) {
+    public ResponseEntity<Story> createStory(@RequestBody Story story) {
         boolean roleAdmin = StaticUtils.isRoleAdmin();
 
         if (roleAdmin) {
-            Optional<Figure> result = figuresService.createFigure(figure);
+            Optional<Story> result = storiesService.createStory(story);
 
             return result
                     .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
+                    .orElseGet(() -> ResponseEntity.notFound().build());
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
     @GetMapping
-    public ResponseEntity<List<Figure>> getFigures() {
-        return ResponseEntity.ok(figuresService.getFigures());
+    public ResponseEntity<List<Story>> getStories() {
+        return ResponseEntity.ok(storiesService.getStories());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Figure> getFigureById(@PathVariable final int id) {
-        Optional<Figure> result = figuresService.getFigureById(id);
+    public ResponseEntity<Story> getStory(@PathVariable int id) {
+        Optional<Story> result = storiesService.getStoryById(id);
 
         return result
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/search/name/{name}")
+    @GetMapping("/search/name/{storyName}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<FigureDTO>> searchFiguresByName(@PathVariable String name) {
-        return ResponseEntity.ok(figuresService.searchFiguresByName(name).
-                map(FigureDTO::new)
+    public ResponseEntity<List<StoryDTO>> searchStoriesByName(@PathVariable String storyName) {
+        return ResponseEntity.ok(storiesService.searchStoryByName(storyName)
+                .map(StoryDTO::new)
                 .toList());
     }
 
-    @GetMapping("/search/story/{storyName}")
+    @GetMapping("/search/figures/{figureName}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<FigureDTO>> searchFiguresByStory(@PathVariable String storyName) {
-        return ResponseEntity.ok(figuresService.getFiguresByStory(storyName).
-                map(FigureDTO::new)
+    public ResponseEntity<List<StoryDTO>> searchStoriesByFigure(@PathVariable String figureName) {
+        return ResponseEntity.ok(storiesService.searchStoriesByFigure(figureName)
+                .map(StoryDTO::new)
                 .toList());
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Figure> updateFigure(@PathVariable final int id, @RequestBody final Figure figure) {
+    public ResponseEntity<Story> updateStory(@PathVariable int id, @RequestBody Story story) {
         boolean roleAdmin = StaticUtils.isRoleAdmin();
-
         if (roleAdmin) {
-            Optional<Figure> updatedFigure = figuresService.updateFigure(id, figure.getName(), figure.getImageLink());
-            return updatedFigure
+            Optional<Story> updateStory = storiesService.updateStory(id, story.getName(),story.getSource().getId());
+            return updateStory
                     .map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } else {
@@ -86,12 +86,12 @@ public class FiguresApiController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Figure> deleteFigure(@PathVariable final int id) {
+    public ResponseEntity<Story> deleteStory(@PathVariable int id) {
         boolean roleAdmin = StaticUtils.isRoleAdmin();
 
         if (roleAdmin) {
-            Optional<Figure> figure = figuresService.deleteFigure(id);
-            if (figure.isEmpty()) {
+            Optional<Story> story = storiesService.deleteStory(id);
+            if (story.isEmpty()) {
                 return ResponseEntity.noContent().build();
             } else {
                 return ResponseEntity.badRequest().build();
