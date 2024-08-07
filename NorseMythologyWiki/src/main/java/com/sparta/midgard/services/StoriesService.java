@@ -1,7 +1,6 @@
 package com.sparta.midgard.services;
 
 import com.sparta.midgard.exceptions.ResourceNotFoundException;
-import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.models.FiguresStory;
 import com.sparta.midgard.models.Story;
 import com.sparta.midgard.repositories.FigureRepository;

@@ -1,9 +1,13 @@
 package com.sparta.midgard.dtos;
 
 import com.sparta.midgard.models.Story;
-import com.sparta.midgard.models.StorySource;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
-public class StoryDTO {
+import java.util.Objects;
+
+@Relation(collectionRelation = "stories")
+public class StoryDTO extends RepresentationModel<StoryDTO> {
     private Integer id;
     private String name;
     private int sourceId;
@@ -38,4 +42,17 @@ public class StoryDTO {
         this.sourceId = sourceId;
     }
 
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        return (o instanceof StoryDTO storyDTO)
+                && sourceId == storyDTO.sourceId
+                && id.equals(storyDTO.id)
+                && name.equals(storyDTO.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, sourceId);
+    }
 }

@@ -1,8 +1,13 @@
 package com.sparta.midgard.dtos;
 
 import com.sparta.midgard.models.Figure;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
-public class FigureDTO {
+import java.util.Objects;
+
+@Relation(collectionRelation = "figures")
+public class FigureDTO extends RepresentationModel<FigureDTO> {
     private int id;
     private String name;
     private String imageLink;
@@ -35,5 +40,19 @@ public class FigureDTO {
 
     public void setImageLink(String imageLink) {
         this.imageLink = imageLink;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        return(o instanceof FigureDTO figureDTO)
+                && id == figureDTO.id
+                && name.equals(figureDTO.name)
+                && imageLink.equals(figureDTO.imageLink);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, imageLink);
     }
 }

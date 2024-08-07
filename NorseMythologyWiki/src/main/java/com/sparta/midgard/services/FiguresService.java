@@ -4,7 +4,6 @@ import com.sparta.midgard.exceptions.ResourceAlreadyExistsException;
 import com.sparta.midgard.exceptions.ResourceNotFoundException;
 import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.models.FiguresStory;
-import com.sparta.midgard.models.Story;
 import com.sparta.midgard.repositories.FigureRepository;
 import com.sparta.midgard.repositories.FiguresStoryRepository;
 import com.sparta.midgard.repositories.StoryRepository;

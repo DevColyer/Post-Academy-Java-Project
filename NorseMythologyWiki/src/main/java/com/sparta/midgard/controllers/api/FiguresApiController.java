@@ -4,100 +4,126 @@ import com.sparta.midgard.dtos.FigureDTO;
 import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.services.FiguresService;
 import com.sparta.midgard.utils.StaticUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/figures")
+@RequestMapping("/api/figures")
 public class FiguresApiController {
+
     private final FiguresService figuresService;
 
     @Autowired
-    public FiguresApiController(final FiguresService figuresService) {
+    public FiguresApiController(FiguresService figuresService) {
         this.figuresService = figuresService;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Figure> createFigure(@RequestBody final Figure figure) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-
-        if (roleAdmin) {
-            Optional<Figure> result = figuresService.createFigure(figure);
-
-            return result
-                    .map(ResponseEntity::ok)
+    public ResponseEntity<FigureDTO> createFigure(@RequestBody Figure figure, HttpServletRequest request) {
+        if (StaticUtils.isRoleAdmin()) {
+            return figuresService.createFigure(figure)
+                    .map(newFigure -> createFigureResponse(newFigure, request))
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @GetMapping
-    public ResponseEntity<List<Figure>> getFigures() {
-        return ResponseEntity.ok(figuresService.getFigures());
+    @Transactional(readOnly = true)
+    public ResponseEntity<CollectionModel<FigureDTO>> getFigures(HttpServletRequest request) {
+        Set<FigureDTO> figureDTOs = figuresService.getFigures().stream()
+                .map(FigureDTO::new)
+                .peek(figure -> addHateoasLinks(figure, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<FigureDTO> collectionModel = CollectionModel.of(figureDTOs);
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Figure> getFigureById(@PathVariable final int id) {
-        Optional<Figure> result = figuresService.getFigureById(id);
+    public ResponseEntity<FigureDTO> getFigureById(@PathVariable int id, HttpServletRequest request) {
+        FigureDTO figureDTO = figuresService.getFigureById(id)
+                .map(FigureDTO::new)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No figure with id: " + id + " exists."
+                ));
 
-        return result
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        addHateoasLinks(figureDTO, request);
+        return ResponseEntity.ok(figureDTO);
     }
 
     @GetMapping("/search/name/{name}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<FigureDTO>> searchFiguresByName(@PathVariable String name) {
-        return ResponseEntity.ok(figuresService.searchFiguresByName(name).
-                map(FigureDTO::new)
-                .toList());
+    public ResponseEntity<CollectionModel<FigureDTO>> searchFiguresByName(@PathVariable String name, HttpServletRequest request) {
+        Set<FigureDTO> figureDTOs = figuresService.searchFiguresByName(name)
+                .map(FigureDTO::new)
+                .peek(figure -> addHateoasLinks(figure, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<FigureDTO> collectionModel = CollectionModel.of(figureDTOs);
+        collectionModel.add(Link.of(StaticUtils.getRequestBaseUrl(request) + "/api/figures").withRel("All Figures"));
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/search/story/{storyName}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<FigureDTO>> searchFiguresByStory(@PathVariable String storyName) {
-        return ResponseEntity.ok(figuresService.getFiguresByStory(storyName).
-                map(FigureDTO::new)
-                .toList());
+    public ResponseEntity<CollectionModel<FigureDTO>> searchFiguresByStory(@PathVariable String storyName, HttpServletRequest request) {
+        Set<FigureDTO> figureDTOs = figuresService.getFiguresByStory(storyName)
+                .map(FigureDTO::new)
+                .peek(figure -> addHateoasLinks(figure, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<FigureDTO> collectionModel = CollectionModel.of(figureDTOs);
+        collectionModel.add(Link.of(StaticUtils.getRequestBaseUrl(request) + "/api/figures").withRel("All Figures"));
+        collectionModel.add(Link.of(StaticUtils.getRequestBaseUrl(request) + "/api/stories").withRel("All Stories"));
+        return ResponseEntity.ok(collectionModel);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Figure> updateFigure(@PathVariable final int id, @RequestBody final Figure figure) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-
-        if (roleAdmin) {
-            Optional<Figure> updatedFigure = figuresService.updateFigure(id, figure.getName(), figure.getImageLink());
-            return updatedFigure
-                    .map(ResponseEntity::ok)
+    public ResponseEntity<FigureDTO> updateFigure(@PathVariable int id, @RequestBody Figure figure, HttpServletRequest request) {
+        if (StaticUtils.isRoleAdmin()) {
+            return figuresService.updateFigure(id, figure.getName(), figure.getImageLink())
+                    .map(updatedFigure -> createFigureResponse(updatedFigure, request))
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Figure> deleteFigure(@PathVariable final int id) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-
-        if (roleAdmin) {
+    public ResponseEntity<Void> deleteFigure(@PathVariable int id) {
+        if (StaticUtils.isRoleAdmin()) {
             Optional<Figure> figure = figuresService.deleteFigure(id);
             if (figure.isEmpty()) {
                 return ResponseEntity.noContent().build();
             } else {
                 return ResponseEntity.badRequest().build();
             }
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    private ResponseEntity<FigureDTO> createFigureResponse(Figure figure, HttpServletRequest request) {
+        String baseUrl = StaticUtils.getRequestBaseUrl(request);
+        FigureDTO figureDTO = new FigureDTO(figure);
+        StaticUtils.addHateoasLink(figureDTO, baseUrl, "/api/figures/" + figureDTO.getId(), figureDTO.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(figureDTO);
+    }
+
+    private void addHateoasLinks(FigureDTO figureDTO, HttpServletRequest request) {
+        String baseUrl = StaticUtils.getRequestBaseUrl(request);
+        StaticUtils.addHateoasLink(figureDTO, baseUrl, "/api/figures/" + figureDTO.getId(), figureDTO.getName());
+        StaticUtils.addHateoasLink(figureDTO, baseUrl, "/api/stories/search/figures/" + figureDTO.getName().replace(" ", "%20"), "Stories");
     }
 }

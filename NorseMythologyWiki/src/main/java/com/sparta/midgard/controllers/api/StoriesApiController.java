@@ -1,24 +1,25 @@
 package com.sparta.midgard.controllers.api;
 
 import com.sparta.midgard.dtos.StoryDTO;
-import com.sparta.midgard.models.Figure;
 import com.sparta.midgard.models.Story;
 import com.sparta.midgard.services.StoriesService;
 import com.sparta.midgard.utils.StaticUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/stories")
+@RequestMapping("/api/stories")
 public class StoriesApiController {
     private final StoriesService storiesService;
 
@@ -28,76 +29,99 @@ public class StoriesApiController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Story> createStory(@RequestBody Story story) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-
-        if (roleAdmin) {
-            Optional<Story> result = storiesService.createStory(story);
-
-            return result
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<StoryDTO> createStory(@RequestBody Story story, HttpServletRequest request) {
+        if (StaticUtils.isRoleAdmin()) {
+            return storiesService.createStory(story)
+                    .map(createdStory -> createStoryResponse(createdStory, request))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @GetMapping
-    public ResponseEntity<List<Story>> getStories() {
-        return ResponseEntity.ok(storiesService.getStories());
+    @Transactional(readOnly = true)
+    public ResponseEntity<CollectionModel<StoryDTO>> getStories(HttpServletRequest request) {
+        Set<StoryDTO> storyDTOs = storiesService.getStories().stream()
+                .map(StoryDTO::new)
+                .peek(storyDTO -> addHateoasLinks(storyDTO, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<StoryDTO> collectionModel = CollectionModel.of(storyDTOs);
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Story> getStory(@PathVariable int id) {
-        Optional<Story> result = storiesService.getStoryById(id);
+    public ResponseEntity<StoryDTO> getStory(@PathVariable int id, HttpServletRequest request) {
+        StoryDTO storyDTO = storiesService.getStoryById(id)
+                .map(StoryDTO::new)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No story with id: " + id + " exists."
+                ));
 
-        return result
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        addHateoasLinks(storyDTO, request);
+        return ResponseEntity.ok(storyDTO);
     }
 
     @GetMapping("/search/name/{storyName}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<StoryDTO>> searchStoriesByName(@PathVariable String storyName) {
-        return ResponseEntity.ok(storiesService.searchStoryByName(storyName)
+    public ResponseEntity<CollectionModel<StoryDTO>> searchStoriesByName(@PathVariable String storyName, HttpServletRequest request) {
+        Set<StoryDTO> storyDTOs = storiesService.searchStoryByName(storyName)
                 .map(StoryDTO::new)
-                .toList());
+                .peek(storyDTO -> addHateoasLinks(storyDTO, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<StoryDTO> collectionModel = CollectionModel.of(storyDTOs);
+        collectionModel.add(Link.of(StaticUtils.getRequestBaseUrl(request) + "/api/stories").withRel("All Stories"));
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/search/figures/{figureName}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<StoryDTO>> searchStoriesByFigure(@PathVariable String figureName) {
-        return ResponseEntity.ok(storiesService.searchStoriesByFigure(figureName)
+    public ResponseEntity<CollectionModel<StoryDTO>> searchStoriesByFigure(@PathVariable String figureName, HttpServletRequest request) {
+        Set<StoryDTO> storyDTOs = storiesService.searchStoriesByFigure(figureName)
                 .map(StoryDTO::new)
-                .toList());
+                .peek(storyDTO -> addHateoasLinks(storyDTO, request))
+                .collect(Collectors.toSet());
+
+        CollectionModel<StoryDTO> collectionModel = CollectionModel.of(storyDTOs);
+        collectionModel.add(Link.of(StaticUtils.getRequestBaseUrl(request) + "/api/stories").withRel("All Stories"));
+        return ResponseEntity.ok(collectionModel);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Story> updateStory(@PathVariable int id, @RequestBody Story story) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-        if (roleAdmin) {
-            Optional<Story> updateStory = storiesService.updateStory(id, story.getName(),story.getSource().getId());
-            return updateStory
-                    .map(ResponseEntity::ok)
+    public ResponseEntity<StoryDTO> updateStory(@PathVariable int id, @RequestBody Story story, HttpServletRequest request) {
+        if (StaticUtils.isRoleAdmin()) {
+            return storiesService.updateStory(id, story.getName(), story.getSource().getId())
+                    .map(updatedStory -> createStoryResponse(updatedStory, request))
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Story> deleteStory(@PathVariable int id) {
-        boolean roleAdmin = StaticUtils.isRoleAdmin();
-
-        if (roleAdmin) {
+    public ResponseEntity<Void> deleteStory(@PathVariable int id) {
+        if (StaticUtils.isRoleAdmin()) {
             Optional<Story> story = storiesService.deleteStory(id);
             if (story.isEmpty()) {
                 return ResponseEntity.noContent().build();
             } else {
                 return ResponseEntity.badRequest().build();
             }
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    private ResponseEntity<StoryDTO> createStoryResponse(Story story, HttpServletRequest request) {
+        String baseUrl = StaticUtils.getRequestBaseUrl(request);
+        StoryDTO storyDTO = new StoryDTO(story);
+        StaticUtils.addHateoasLink(storyDTO, baseUrl, "/api/stories/" + storyDTO.getId(), storyDTO.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(storyDTO);
+    }
+
+    private void addHateoasLinks(StoryDTO storyDTO, HttpServletRequest request) {
+        String baseUrl = StaticUtils.getRequestBaseUrl(request);
+        StaticUtils.addHateoasLink(storyDTO, baseUrl, "/api/stories/" + storyDTO.getId(), storyDTO.getName());
+        StaticUtils.addHateoasLink(storyDTO, baseUrl, "/api/figures/search/story/" + storyDTO.getName().replace(" ", "%20"), "Figures");
     }
 }

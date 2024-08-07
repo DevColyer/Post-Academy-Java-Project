@@ -1,6 +1,8 @@
 package com.sparta.midgard.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,5 +34,9 @@ public class StaticUtils {
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
 
         return userDetails.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    public static void addHateoasLink(RepresentationModel<?> model, String baseUrl, String path, String rel) {
+        model.add(Link.of(baseUrl + path).withRel(rel));
     }
 }
