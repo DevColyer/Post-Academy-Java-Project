@@ -6,7 +6,6 @@ Welcome to the NorseMythologyWiki API! This project provides a backend API for a
 
 - [Prerequisites](#prerequisites)
 - [Initial Setup](#initial-setup)
-- [Configuration](#configuration)
 - [Running the Application](#running-the-application)
 - [Testing](#testing)
 - [Contributing](#contributing)
@@ -33,44 +32,44 @@ Before setting up the application, ensure you have the following installed:
 
 2. **Configure the Database Connection:**
 
-   Create an `application.properties` file in the `src/main/resources` directory of your project. Use the following template, replacing placeholders with your actual database details and JWT secret:
+     - Create an `application.properties` file in the `src/main/resources` directory of your project. Use the following template, replacing placeholders with your actual database details and JWT secret:
 
-   ```properties
-   spring.application.name=NorseMythologyWiki
-   spring.datasource.url=jdbc:mysql://localhost:3306/your-db-here
-   spring.datasource.username=username
-   spring.datasource.password=password
+         ```properties
+         spring.application.name=NorseMythologyWiki
+         spring.datasource.url=jdbc:mysql://localhost:3306/your-db-here
+         spring.datasource.username=username
+         spring.datasource.password=password
 
-   jwt.cookie.name=jwt
-   # 10hr in ms
-   jwt.token.validity=36000000
-   jwt.secret=your-secret-here
+         jwt.cookie.name=jwt
+         # 10hr in ms
+         jwt.token.validity=36000000
+         jwt.secret=your-secret-here
 
-   spring.banner.location=classpath:banner.txt
-   spring.banner.charset=UTF-8
+         spring.banner.location=classpath:banner.txt
+         spring.banner.charset=UTF-8
 
-   springdoc.api-docs.enabled=true
-   springdoc.swagger-ui.enabled=true
-```
+         springdoc.api-docs.enabled=true
+         springdoc.swagger-ui.enabled=true
+         ```
 
 3. **Setup Bean Initialization:**
 
-   The first run of the application requires the setup bean to be initialized. Ensure that you configure this bean in your main application file (`NorseMythologyWikiApplication.java`). For example:
+   - The first run of the application requires the setup bean to be initialized. Ensure that you configure this bean in your main application file (`NorseMythologyWikiApplication.java`). For example:
 
-   ```java
-    @Bean
-    CommandLineRunner setup(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        return args -> {
-            Set<String> adminRoles = new HashSet<>();
-            adminRoles.add("ROLE_ADMIN");
-            userRepository.save(new User("admin", passwordEncoder.encode("password"), adminRoles));
+      ```java
+       @Bean
+       CommandLineRunner setup(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+           return args -> {
+               Set<String> adminRoles = new HashSet<>();
+               adminRoles.add("ROLE_ADMIN");
+               userRepository.save(new User("admin", passwordEncoder.encode("password"), adminRoles));
 
-            Set<String> userRoles = new HashSet<>();
-            userRoles.add("ROLE_USER");
-            userRepository.save(new User("user", passwordEncoder.encode("password"), userRoles));
-        };
-    }
-```
+               Set<String> userRoles = new HashSet<>();
+               userRoles.add("ROLE_USER");
+               userRepository.save(new User("user", passwordEncoder.encode("password"), userRoles));
+           };
+       }
+      ```
 
 ## Running the Application
 
@@ -80,36 +79,34 @@ Before setting up the application, ensure you have the following installed:
 
    ```sh
    mvn clean install
-```
+   ```
+   
 2. **Run the Application:**
 
    Start the application using the following command:
 
    ```sh
    mvn spring-boot:run
-```
-Alternatively, if you have a packaged JAR file, you can run it with:
+   ```
+
+   Alternatively, if you have a packaged JAR file, you can run it with:
 
    ```sh
    java -jar target/norse-mythology-wiki-api.jar
-```
-By default, the application will start on port 8080. You can change the port by specifying it in the application.properties file:
+   ```
+
+   By default, the application will start on port 8080. You can change the port by specifying it in the application.properties file:
    ```properties
    server.port=8081
-```
+   ```
+   
 3. **Access the API Documentation:**
 
    Once the application is running, you can access the API documentation through Swagger UI:
 
-   - **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+   - **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
    Swagger UI provides an interactive interface to explore and test the API endpoints. It will allow you to see the available endpoints, their required parameters, and the responses they return.
-
-   Additionally, you can access the OpenAPI JSON documentation:
-
-   - **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-
-   This URL provides a structured format of the API documentation in JSON, which can be useful for integration with other tools or for generating client libraries.
 
 4. **Stopping the Application:**
 
@@ -124,6 +121,7 @@ To ensure that the application functions correctly, run the unit tests and integ
 ```sh
 mvn test
 ```
+
 Running tests is crucial to verify that your changes do not introduce new issues. Ensure all tests pass before submitting any changes to maintain the application's stability and reliability.
 
 ## Contributing
@@ -140,17 +138,15 @@ We welcome contributions from the community! To contribute to the NorseMythology
 
    ```sh
    git clone https://github.com/your-username/norse-mythology-wiki-api.git
-```
+   ```
+   
 4. **Create a New Branch:**
 
    Create a new branch for your changes:
 
    ```sh
    git checkout -b feature/your-feature
-```
-Certainly! Here’s the continuation from the “Create a New Branch” section in Markdown format:
-
-markdown
+   ```
 
 4. **Create a New Branch:**
 
@@ -158,6 +154,7 @@ markdown
 
    ```sh
    git checkout -b feature/your-feature
+   ```
 
 Choose a descriptive name for the branch based on the feature or fix you are working on. For example, use names like feature/user-authentication or bugfix/login-error.
 5. **Make Your Changes:**
@@ -177,7 +174,8 @@ Choose a descriptive name for the branch based on the feature or fix you are wor
    ```sh
    git add .
    git commit -m "Add feature: description of the feature"
-```
+   ```
+   
 Ensure that your commit messages are clear and descriptive. Follow the format Add feature: description of the feature or Fix bug: description of the bug. This helps maintain a clear project history and makes it easier for reviewers to understand the purpose of the changes.
 7. **Push Your Changes:**
 
@@ -185,7 +183,8 @@ Ensure that your commit messages are clear and descriptive. Follow the format Ad
 
    ```sh
    git push origin feature/your-feature
-```
+   ```
+
 This command uploads your local branch and commits to your GitHub repository, making them available for review.
 8. **Create a Pull Request:**
 
