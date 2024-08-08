@@ -177,6 +177,7 @@ Choose a descriptive name for the branch based on the feature or fix you are wor
    ```
    
 Ensure that your commit messages are clear and descriptive. Follow the format Add feature: description of the feature or Fix bug: description of the bug. This helps maintain a clear project history and makes it easier for reviewers to understand the purpose of the changes.
+
 7. **Push Your Changes:**
 
    Push your changes to your fork on GitHub:
@@ -186,6 +187,7 @@ Ensure that your commit messages are clear and descriptive. Follow the format Ad
    ```
 
 This command uploads your local branch and commits to your GitHub repository, making them available for review.
+
 8. **Create a Pull Request:**
 
    Navigate to the original repository on GitHub to create a pull request (PR) from your forked repository. Follow these steps:
