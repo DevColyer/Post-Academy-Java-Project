@@ -1,8 +1,6 @@
 package com.sparta.midgard.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 import java.util.Set;
 
@@ -18,19 +16,6 @@ public class User {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<String> roles;
-
-    @Size(max = 255)
-    @NotNull
-    @Column(name = "email", nullable = false)
-    private String email;
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
     public User() {
     }

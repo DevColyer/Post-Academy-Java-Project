@@ -1,5 +1,6 @@
 package com.sparta.midgard.controllers.api;
 
+import com.sparta.midgard.utils.StaticUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,7 +38,7 @@ public class AuthenticationController {
         this.jwtManager = jwtManager;
     }
 
-    @PostMapping("/authenticate")
+    @PostMapping("/api/token/auth")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest, HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -77,12 +78,11 @@ public class AuthenticationController {
         return ResponseEntity.ok("Successfully logged out");
     }
 
-    @PostMapping("/renew")
+    @PostMapping("/api/token/renew")
     public ResponseEntity<?> renewToken(HttpServletRequest request, HttpServletResponse response) {
-        final String authorizationHeader = request.getHeader("Authorization");
+        String token = StaticUtils.extractJwtFromCookies(request.getCookies(), cookieName);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            final String token = authorizationHeader.substring(7);
+        if (token != null) {
             final String username = jwtManager.extractUser(token);
 
             if (username != null) {
@@ -102,11 +102,11 @@ public class AuthenticationController {
                 }
             } else {
                 return ResponseEntity.status(HttpServletResponse.SC_BAD_REQUEST)
-                        .body("Invalid authorization header");
+                        .body("Invalid token");
             }
         } else {
             return ResponseEntity.status(HttpServletResponse.SC_BAD_REQUEST)
-                    .body("Authorization header missing or incorrect");
+                    .body("Token not found in cookies");
         }
     }
 

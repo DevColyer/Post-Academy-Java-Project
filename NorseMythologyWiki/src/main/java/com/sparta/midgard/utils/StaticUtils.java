@@ -1,5 +1,6 @@
 package com.sparta.midgard.utils;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
@@ -38,5 +39,16 @@ public class StaticUtils {
 
     public static void addHateoasLink(RepresentationModel<?> model, String baseUrl, String path, String rel) {
         model.add(Link.of(baseUrl + path).withRel(rel));
+    }
+
+    public static String extractJwtFromCookies(Cookie[] cookies, String jwtTokenName) {
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(jwtTokenName)) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

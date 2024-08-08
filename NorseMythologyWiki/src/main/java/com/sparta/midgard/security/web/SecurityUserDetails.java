@@ -1,12 +1,12 @@
 package com.sparta.midgard.security.web;
 
 import com.sparta.midgard.models.User;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 public class SecurityUserDetails implements UserDetails {
     private final User user;
@@ -15,11 +15,12 @@ public class SecurityUserDetails implements UserDetails {
         this.user = user;
     }
 
+    @Transactional
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return user.getRoles().stream()
                 .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toSet());
+                .toList();
     }
 
     @Override
@@ -30,25 +31,5 @@ public class SecurityUserDetails implements UserDetails {
     @Override
     public String getUsername() {
         return user.getUsername();
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
     }
 }

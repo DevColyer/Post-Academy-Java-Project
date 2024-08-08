@@ -1,9 +1,9 @@
 package com.sparta.midgard.security.api;
 
 import com.sparta.midgard.services.security.SecurityService;
+import com.sparta.midgard.utils.StaticUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +39,12 @@ public class TokenRequestFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
 
-        if (!requestURI.startsWith("/api")) {
+        if (requestURI.startsWith("/api/token") || !requestURI.startsWith("/api")) {
             chain.doFilter(request, response);
             return;
         }
 
-        String jwt = extractJwtFromCookies(request.getCookies());
+        String jwt = StaticUtils.extractJwtFromCookies(request.getCookies(), cookieName);
 
         if (jwt != null) {
             String username = jwtManager.extractUser(jwt);
@@ -73,16 +73,5 @@ public class TokenRequestFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
-    }
-
-    private String extractJwtFromCookies(Cookie[] cookies) {
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals(cookieName)) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
     }
 }

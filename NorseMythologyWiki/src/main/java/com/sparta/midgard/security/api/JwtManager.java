@@ -119,7 +119,7 @@ public class JwtManager {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + tokenValidity))
-                .signWith(secretKey, SignatureAlgorithm.ES512)
+                .signWith(secretKey, SignatureAlgorithm.HS384)
                 .compact();
     }
 
